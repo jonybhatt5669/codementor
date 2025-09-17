@@ -7,12 +7,16 @@ import ResponsiveLogo from '@/assets/svg/responsive_logo.svg'
 
 import {MegaMenu} from "@/components/shared/MegaMenu.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {ListFilter} from "lucide-react";
+import {ArrowRightFromLine, ListFilter} from "lucide-react";
 import {Link, useNavigate} from "react-router";
 import {Dialog, DialogTrigger} from "@/components/ui/dialog.tsx";
 import {RegisterForm} from "@/components/RegisterForm.tsx";
 import {useAuthStore} from "@/store/authStore.ts";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar.tsx";
+
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 
 export const Navbar = () => {
@@ -21,6 +25,12 @@ export const Navbar = () => {
     const menuRef = useRef<HTMLDivElement>(null);
     const iconRef = useRef<SVGSVGElement>(null);
     const isLoggedIn = useAuthStore(state => state.isAuthenticated)
+    const logout = useAuthStore(state => state.logout)
+    const accessToken = useAuthStore(state => state.accessToken)
+    const [status, setStatus] = useState<"idle"|"loading"|"success"|"error">("idle");
+
+    console.log("AccessToken: ", accessToken)
+
 
     useEffect(() => {
         if (isOpen && menuRef.current) {
@@ -41,6 +51,40 @@ export const Navbar = () => {
             });
         }
     }, [isOpen]);
+
+
+    const logOut = async () => {
+        setStatus("loading")
+        try {
+
+            const res = await fetch("http://localhost:8080/api/auth/logout", {
+                method: "POST", headers: {
+                    "Content-Type": "application/json", Authorization: `Bearer ${accessToken}`,
+                }
+            })
+
+            if (res.ok) {
+                setStatus(
+                    "success"
+                )
+                logout()
+                navigation("/login")
+            }
+        }catch (e) {
+            console.log("Error: ",e)
+
+        }finally {
+            setStatus("idle")
+        }
+
+
+    }
+
+    if(status==="loading"){
+        return (<div className="fixed inset-0 flex items-center justify-center bg-white z-50">
+            <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div>
+        </div>);
+    }
 
     return (<nav className="bg-white shadow-lg shadow-blue-400/30 fixed w-full z-10">
         <div className="max-w-svw mx-auto px-4 sm:px-6 lg:px-12 py-4">
@@ -67,16 +111,37 @@ export const Navbar = () => {
                     </div>
 
                     {/* Desktop Menu */}
+
                     <div className={"hidden lg:block"}>
                         <MegaMenu/>
                     </div>
                 </div>
 
                 {isLoggedIn ? <>
-                    <Avatar>
-                        <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn"/>
-                        <AvatarFallback>CN</AvatarFallback>
-                    </Avatar>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger>
+                            <Avatar>
+                                <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn"/>
+                                <AvatarFallback>CN</AvatarFallback>
+                            </Avatar>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className={"-ml-8"}>
+                            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                            <DropdownMenuSeparator/>
+                            <DropdownMenuItem>Profile</DropdownMenuItem>
+                            <DropdownMenuItem>Billing</DropdownMenuItem>
+                            <DropdownMenuItem>Team</DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <Button variant={"outline"} className={"flex items-center gap-4"}
+                                        onClick={logOut}
+                                >
+                                    <ArrowRightFromLine size={24}/>
+                                    Log out
+                                </Button>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
                 </> : <>
                     <div className={"flex items-center gap-4"}>
                         <Link to={"/"} className={"hidden sm:block"}>
