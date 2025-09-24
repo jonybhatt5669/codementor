@@ -42,7 +42,7 @@ export function Login() {
 
             login(tokens.access_token, tokens.refresh_token);
 
-            navigate('/')
+            navigate('/user-onboard')
         } catch (e) {
             // @ts-expect-error: e should have message
             console.log("Registration failed:", e.message);
